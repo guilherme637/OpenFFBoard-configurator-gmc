@@ -230,6 +230,9 @@ def style_main_window(window):
         header_layout.addWidget(status)
         status.show()
         window.statusBar().hide()
+    motor_box = QHBoxLayout()
+    motor_box.setSpacing(6)
+    header_layout.addLayout(motor_box)
 
     content = QWidget()
     content.setObjectName("simproContent")
@@ -254,6 +257,74 @@ def style_main_window(window):
     window.setCentralWidget(root)
 
     window._simpro_sidebar_sync = _SideBarSync(tabs, nav, title)
+    window._simpro_motor_state = _MotorStateBadges(tabs, motor_box)
+
+
+class _MotorStateBadges(PyQt6.QtCore.QObject):
+    """Motor state badge(s) in the info strip, next to the connection badge.
+
+    READ ONLY: copies the text of ``label_state`` that each TMC4671 page
+    already shows (that page asks the board itself while it is open). This
+    never sends anything to the board. When the TMC page is not on screen the
+    last value seen is shown and marked as such.
+    Green = Running (ready), red = any other state.
+    """
+
+    READY = ("Running",)
+
+    def __init__(self, tabs: QTabWidget, box: QHBoxLayout):
+        super().__init__(tabs)
+        self.tabs = tabs
+        self.box = box
+        self.badges = {}  # page -> QLabel
+        self._timer = PyQt6.QtCore.QTimer(self)
+        self._timer.setInterval(300)
+        self._timer.timeout.connect(self.refresh)
+        self._timer.start()
+
+    def _tmc_pages(self):
+        pages = []
+        for i in range(self.tabs.count()):
+            page = self.tabs.widget(i)
+            if type(page).__name__ == "TMC4671Ui":
+                lbl = page.findChild(QLabel, "label_state")
+                if lbl is not None:
+                    pages.append((page, lbl, self.tabs.tabText(i).replace("&", "")))
+        return pages
+
+    def refresh(self):
+        pages = self._tmc_pages()
+        alive = {p for p, _, _ in pages}
+        for page in list(self.badges):
+            if page not in alive:  # tab closed / board disconnected
+                badge = self.badges.pop(page)
+                self.box.removeWidget(badge)
+                badge.deleteLater()
+        for page, lbl, name in pages:
+            badge = self.badges.get(page)
+            if badge is None:
+                badge = QLabel()
+                badge.setObjectName("simproMotorBadge")
+                self.box.addWidget(badge)
+                self.badges[page] = badge
+            state = lbl.text().strip()
+            if not state or state == "State":
+                text, kind = "aguardando leitura", "unknown"
+                tip = "Abra a aba do TMC4671 para ler o estado do motor."
+            else:
+                kind = "ready" if state in self.READY else "notready"
+                text = state
+                tip = f"Estado do driver ({name}): {state}"
+            live = page.isVisible()
+            if not live and kind != "unknown":
+                text += " · última leitura"
+                tip += "\nAtualiza enquanto a aba do TMC4671 estiver aberta."
+            badge.setText(f"Motor: {text}")
+            badge.setToolTip(tip)
+            if badge.property("motorState") != kind:
+                badge.setProperty("motorState", kind)
+                badge.style().unpolish(badge)
+                badge.style().polish(badge)
 
 
 class _NavDelegate(QStyledItemDelegate):

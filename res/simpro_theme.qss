@@ -731,3 +731,22 @@ QToolButton#simproWheelImageButton::menu-arrow {
     image: url(@THEME@/arrow_down.svg);
     width: 8px; height: 5px;
 }
+
+/* Motor state badge (copied from the TMC4671 page, read only) */
+QWidget#simproHeader QLabel#simproMotorBadge {
+    border-radius: 3px;
+    padding: 2px 10px;
+    font-weight: bold;
+    border: 1px solid #5E616A;
+    color: #9A9DA6;
+}
+QWidget#simproHeader QLabel#simproMotorBadge[motorState="ready"] {
+    color: #3FD07A;
+    border-color: #2EA862;
+    background-color: rgba(46, 168, 98, 30);
+}
+QWidget#simproHeader QLabel#simproMotorBadge[motorState="notready"] {
+    color: #E0242B;
+    border-color: #C8161D;
+    background-color: rgba(200, 22, 29, 30);
+}
