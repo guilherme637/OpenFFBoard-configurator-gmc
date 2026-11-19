@@ -38,6 +38,7 @@ import base_ui
 import serial_ui
 import dfu_ui
 import dark_palette
+import simpro_theme
 import profile_ui
 import ffb_ui
 import axis_ui
@@ -1121,21 +1122,10 @@ if __name__ == "__main__":
     translator = PyQt6.QtCore.QTranslator(app) # Translator must be created before UI loaded
     while(restart):
         restart = False
+        # SimPro style look (visual only, same on every platform)
+        simpro_theme.apply_theme(app)
         window = MainUi()
-        if (sys.platform == "win32" or "Windows" in sys.platform):
-            # only on windows, for macOS and linux use system palette.
-            # windows server is not called win32
-            # pylint: disable=import-error
-            from winreg import (
-                HKEY_CURRENT_USER as hkey,
-                QueryValueEx as getSubkeyValue,
-                OpenKey as getKey,
-            )
-            # Check if is not using windows 11 style(windows 11 style is dark mode compatible)
-            if windows_theme_is_light() == 0 and app.style().objectName() != "windows11":
-                app.setStyle("Fusion")
-                app.setPalette(dark_palette.PALETTE_DARK)
-                window.menubar.setStyleSheet("QMenu::item {color: white; }") # Menu item text ignores palette setting and stays black. Force to white.
+        simpro_theme.style_main_window(window)
 
         window.setWindowTitle(PyQt6.QtCore.QCoreApplication.translate("MainUi", "Open FFBoard Configurator"))
         window.setWindowIcon(PyQt6.QtGui.QIcon(helper.res_path('app.ico')))
