@@ -430,3 +430,70 @@ class SimproWheelView(QWidget):
             p.drawEllipse(Point(r * x, -r * 0.12), r * 0.045, r * 0.045)
         p.setBrush(ACCENT)
         p.drawEllipse(Point(0, r * 0.12), r * 0.07, r * 0.07)
+
+
+class SimproInfoToggle(PyQt6.QtWidgets.QCheckBox):
+    """SimPro-like on/off switch that shows or hides the explanation labels
+    (QLabel with the ``simproInfo`` property) of the page it sits on.
+    Display only: it never talks to the board."""
+
+    TRACK_W, TRACK_H = 38, 20
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCursor(PyQt6.QtCore.Qt.CursorShape.PointingHandCursor)
+        self.toggled.connect(self._apply)
+
+    def _info_labels(self):
+        page = self.parentWidget()
+        if page is None:
+            return []
+        return [lbl for lbl in page.findChildren(QLabel) if lbl.property("simproInfo")]
+
+    def _apply(self, on):
+        for lbl in self._info_labels():
+            lbl.setVisible(bool(on))
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._apply(self.isChecked())
+
+    def sizeHint(self):
+        fm = self.fontMetrics()
+        return PyQt6.QtCore.QSize(fm.horizontalAdvance(self.text()) + self.TRACK_W + 34,
+                                  max(fm.height(), self.TRACK_H) + 8)
+
+    def minimumSizeHint(self):
+        return self.sizeHint()
+
+    def hitButton(self, pos):
+        return self.rect().contains(pos)
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = self.rect()
+        on = self.isChecked()
+        # info icon + text
+        p.setPen(QColor("#C9CBD1") if not on else QColor("#FFFFFF"))
+        icon_r = PyQt6.QtCore.QRectF(2, (r.height() - 16) / 2, 16, 16)
+        p.drawEllipse(icon_r)
+        f = QFont(self.font()); f.setBold(True); f.setPointSizeF(8)
+        p.setFont(f)
+        p.drawText(icon_r, int(PyQt6.QtCore.Qt.AlignmentFlag.AlignCenter), "i")
+        p.setFont(self.font())
+        text_r = PyQt6.QtCore.QRect(24, 0, r.width() - self.TRACK_W - 34, r.height())
+        p.drawText(text_r, int(PyQt6.QtCore.Qt.AlignmentFlag.AlignVCenter | PyQt6.QtCore.Qt.AlignmentFlag.AlignLeft),
+                   self.text())
+        # switch
+        x = r.width() - self.TRACK_W - 2
+        y = (r.height() - self.TRACK_H) / 2
+        track = PyQt6.QtCore.QRectF(x, y, self.TRACK_W, self.TRACK_H)
+        p.setPen(PyQt6.QtCore.Qt.PenStyle.NoPen)
+        p.setBrush(ACCENT if on else QColor("#4A4D55"))
+        p.drawRoundedRect(track, self.TRACK_H / 2, self.TRACK_H / 2)
+        knob = self.TRACK_H - 6
+        kx = x + (self.TRACK_W - knob - 3 if on else 3)
+        p.setBrush(QColor("#FFFFFF"))
+        p.drawEllipse(PyQt6.QtCore.QRectF(kx, y + 3, knob, knob))
+        p.end()

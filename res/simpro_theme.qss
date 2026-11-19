@@ -695,3 +695,17 @@ QSpinBox[buttonSymbols="2"]::down-button, QDoubleSpinBox[buttonSymbols="2"]::dow
     width: 0px;
     border: none;
 }
+
+/* Explanation boxes shown by the "show explanations" switch */
+QLabel[simproInfo="true"] {
+    color: #B4B7BF;
+    font-size: 9pt;
+    font-weight: normal;
+    background-color: rgba(200, 22, 29, 18);
+    border-left: 2px solid #C8161D;
+    border-radius: 3px;
+    padding: 5px 8px;
+}
+SimproInfoToggle {
+    background: transparent;
+}
