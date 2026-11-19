@@ -709,3 +709,25 @@ QLabel[simproInfo="true"] {
 SimproInfoToggle {
     background: transparent;
 }
+
+/* "Trocar imagem" button on the steering wheel picture */
+QToolButton#simproWheelImageButton {
+    background-color: rgba(23, 24, 28, 200);
+    border: 1px solid #3C3F48;
+    border-radius: 4px;
+    color: #C9CBD1;
+    padding: 3px 18px 3px 5px;
+}
+QToolButton#simproWheelImageButton:hover {
+    border-color: #C8161D;
+    color: #FFFFFF;
+}
+QToolButton#simproWheelImageButton::menu-button {
+    border: none;
+    border-left: 1px solid #3C3F48;
+    width: 14px;
+}
+QToolButton#simproWheelImageButton::menu-arrow {
+    image: url(@THEME@/arrow_down.svg);
+    width: 8px; height: 5px;
+}

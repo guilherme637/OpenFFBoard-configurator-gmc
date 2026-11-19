@@ -1,14 +1,21 @@
 Foto do volante na tela Axis
 ============================
 
-Coloque aqui um arquivo chamado  wheel.png  (nesta pasta: res/theme/).
+Jeito facil: na tela Axis, clique no botao com a camera (canto do desenho do
+volante) e escolha a imagem. Ela fica salva no seu computador e aparece sempre.
+Para voltar ao desenho padrao: setinha ao lado da camera (ou clique direito no
+volante) > "Usar volante padrao".
+
+Onde a imagem escolhida fica salva:
+  Windows: %LOCALAPPDATA%\OpenFFBoard-Configurator\wheel.png
+  Linux:   ~/.local/share/OpenFFBoard-Configurator/wheel.png
+  macOS:   ~/Library/Application Support/OpenFFBoard-Configurator/wheel.png
+
+Alternativa: colocar um arquivo  wheel.png  nesta pasta (res/theme/).
 
 Dicas para a imagem:
-- Foto de frente do volante, com o volante reto (centralizado).
-- Fundo transparente (PNG). Sites como remove.bg tiram o fundo.
-- Imagem quadrada, com o centro do volante no centro da imagem.
-- Qualquer tamanho; 400x400 ou mais fica bom.
+- Foto de frente, com o volante reto (centralizado).
+- Fundo transparente (PNG) fica melhor. Sites como remove.bg tiram o fundo.
+- Quadrada, com o centro do volante no centro da imagem.
 
-Sem esse arquivo, o app desenha um volante generico.
-A imagem gira de acordo com os graus mostrados na tela (posicao do encoder).
-Feche e abra o app depois de trocar a imagem.
+A imagem so gira na tela de acordo com os graus; nao envia nada para a placa.

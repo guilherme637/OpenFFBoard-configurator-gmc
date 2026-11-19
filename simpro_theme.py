@@ -292,8 +292,9 @@ class SimproWheelView(QWidget):
 
     It only *reads* the angle already shown in the sibling
     ``doubleSpinBox_curdeg`` (updated by the axis page from the encoder).
-    If ``res/theme/wheel.png`` exists (e.g. a front photo of your wheel with a
-    transparent background) it is used; otherwise a wheel is drawn.
+    The picture can be chosen with the "Trocar imagem" button on the widget
+    (kept in the user's app data folder). Otherwise ``res/theme/wheel.png`` is
+    used if present, else a wheel is drawn.
     """
 
     IMAGE_FILE = "wheel.png"
@@ -309,6 +310,73 @@ class SimproWheelView(QWidget):
         self._anim.timeout.connect(self._step)
         self.setSizePolicy(PyQt6.QtWidgets.QSizePolicy.Policy.Expanding,
                            PyQt6.QtWidgets.QSizePolicy.Policy.Fixed)
+
+        # "Trocar imagem" button (top right) + right click menu
+        self._btn = PyQt6.QtWidgets.QToolButton(self)
+        self._btn.setObjectName("simproWheelImageButton")
+        self._btn.setIcon(QIcon(helper.res_path("camera.svg", path_join("res", "theme"))))
+        self._btn.setIconSize(PyQt6.QtCore.QSize(16, 16))
+        self._btn.setToolTip("Trocar a imagem do volante\n(PNG com fundo transparente fica melhor;\nclique com o botão direito para mais opções)")
+        self._btn.setCursor(PyQt6.QtCore.Qt.CursorShape.PointingHandCursor)
+        self._btn.setPopupMode(PyQt6.QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        menu = PyQt6.QtWidgets.QMenu(self._btn)
+        menu.addAction("Escolher imagem do volante...", self.choose_image)
+        self._reset_action = menu.addAction("Usar volante padrão", self.reset_image)
+        self._btn.setMenu(menu)
+        self._btn.clicked.connect(self.choose_image)
+        self.setContextMenuPolicy(PyQt6.QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(lambda pos: menu.exec(self.mapToGlobal(pos)))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._btn.adjustSize()
+        self._btn.move(self.width() - self._btn.width() - 2, self.height() - self._btn.height() - 2)
+
+    # ---- user picture
+    @staticmethod
+    def user_image_path():
+        base = PyQt6.QtCore.QStandardPaths.writableLocation(
+            PyQt6.QtCore.QStandardPaths.StandardLocation.GenericDataLocation)
+        return path_join(base, "OpenFFBoard-Configurator", "wheel.png")
+
+    @classmethod
+    def _refresh_all(cls):
+        cls._pixmap_cache.clear()
+        for widget in PyQt6.QtWidgets.QApplication.allWidgets():
+            if isinstance(widget, SimproWheelView):
+                widget.update()
+
+    def choose_image(self):
+        file, _ = PyQt6.QtWidgets.QFileDialog.getOpenFileName(
+            self, "Escolher imagem do volante", "",
+            "Imagens (*.png *.jpg *.jpeg *.webp *.bmp)")
+        if not file:
+            return
+        image = PyQt6.QtGui.QImage(file)
+        if image.isNull():
+            PyQt6.QtWidgets.QMessageBox.warning(self, "Imagem do volante",
+                                                "Não foi possível abrir essa imagem.")
+            return
+        # keep it reasonably small, square-friendly
+        if max(image.width(), image.height()) > 1024:
+            image = image.scaled(1024, 1024, PyQt6.QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                                 PyQt6.QtCore.Qt.TransformationMode.SmoothTransformation)
+        target = self.user_image_path()
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        if not image.save(target, "PNG"):
+            PyQt6.QtWidgets.QMessageBox.warning(self, "Imagem do volante",
+                                                f"Não foi possível salvar a imagem em:\n{target}")
+            return
+        self._refresh_all()
+
+    def reset_image(self):
+        target = self.user_image_path()
+        try:
+            if os.path.exists(target):
+                os.remove(target)
+        except OSError:
+            pass
+        self._refresh_all()
 
     # ---- link to the existing angle display
     def _find_source(self):
@@ -350,11 +418,16 @@ class SimproWheelView(QWidget):
     # ---- drawing
     @classmethod
     def _user_pixmap(cls):
-        path = helper.res_path(cls.IMAGE_FILE, path_join("res", "theme"))
-        if path not in cls._pixmap_cache:
-            pm = QPixmap(path) if os.path.exists(path) else QPixmap()
-            cls._pixmap_cache[path] = pm
-        return cls._pixmap_cache[path]
+        if "pm" not in cls._pixmap_cache:
+            pm = QPixmap()
+            for path in (cls.user_image_path(),
+                         helper.res_path(cls.IMAGE_FILE, path_join("res", "theme"))):
+                if os.path.exists(path):
+                    pm = QPixmap(path)
+                    if not pm.isNull():
+                        break
+            cls._pixmap_cache["pm"] = pm
+        return cls._pixmap_cache["pm"]
 
     def paintEvent(self, event):
         painter = QPainter(self)
