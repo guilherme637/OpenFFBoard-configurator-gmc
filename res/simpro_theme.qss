@@ -91,22 +91,10 @@ QMenu::indicator {
     left: 4px;
 }
 
-/* ---------- Main navigation (left side bar like SimPro) ---------- */
+/* ---------- Main navigation (left icon side bar like SimPro) ---------- */
 QWidget#simproSideBar {
-    background-color: #17181C;
-    border-right: 1px solid #2C2F37;
-}
-QLabel#simproLogo {
-    color: #E0242B;
-    font-size: 15pt;
-    font-weight: bold;
-    font-style: italic;
-    padding: 14px 6px 2px 6px;
-}
-QLabel#simproLogoSub {
-    color: #7A7D86;
-    font-size: 8pt;
-    padding: 0px 6px 12px 6px;
+    background-color: #141519;
+    border-right: 1px solid #24262D;
 }
 QListWidget#simproNav {
     background-color: transparent;
@@ -114,34 +102,42 @@ QListWidget#simproNav {
     border-radius: 0px;
     padding: 0px;
     outline: 0;
-    font-size: 10.5pt;
 }
 QListWidget#simproNav::item {
-    color: #9A9DA6;
     border: none;
-    border-left: 3px solid transparent;
-    border-radius: 0px;
-    padding: 12px 14px;
-    margin: 1px 0px;
-}
-QListWidget#simproNav::item:hover {
-    background-color: #22242B;
-    color: #FFFFFF;
-}
-QListWidget#simproNav::item:selected {
-    background-color: #262A33;
-    color: #E0242B;
-    border-left: 3px solid #C8161D;
+    background: transparent;
 }
 QLabel#simproPageTitle {
     color: #FFFFFF;
-    font-size: 22pt;
+    font-size: 24pt;
     font-weight: bold;
-    padding: 12px 14px 4px 14px;
+    padding: 10px 18px 6px 18px;
 }
 QTabWidget#tabWidget_main::pane {
-    background-color: #262A33;
+    background-color: transparent;
     border: none;
+}
+
+/* Info strip under the title (connection, RAM, board...) */
+QWidget#simproHeader {
+    background-color: #1D1F25;
+    border: 1px solid #2C2F37;
+    border-radius: 8px;
+}
+QWidget#simproHeader QLabel {
+    color: #C9CBD1;
+    font-size: 10pt;
+}
+QWidget#simproHeader QLabel#label_board {
+    color: #E0242B;
+    border: 1px solid #C8161D;
+    border-radius: 3px;
+    padding: 2px 10px;
+    font-weight: bold;
+}
+QWidget#simproHeader QLabel#label_memfree {
+    color: #FFFFFF;
+    font-weight: bold;
 }
 
 /* ---------- Secondary tabs (e.g. "Frequently Used / Other Effects") ---------- */
@@ -608,4 +604,94 @@ QMessageBox QLabel {
 }
 QDialogButtonBox QPushButton {
     min-width: 80px;
+}
+
+/* ---------- SimPro style values (marked in the .ui files) ---------- */
+QLabel[simproValue="true"] {
+    color: #FFFFFF;
+    font-size: 11pt;
+    font-weight: bold;
+}
+QSpinBox[simproValue="true"], QDoubleSpinBox[simproValue="true"] {
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: #FFFFFF;
+    font-size: 11pt;
+    font-weight: bold;
+    min-width: 64px;
+    max-width: 110px;
+    padding: 2px 18px 2px 4px;
+}
+QSpinBox[simproValue="true"]:hover, QDoubleSpinBox[simproValue="true"]:hover {
+    border-color: #3C3F48;
+    background-color: #17181C;
+}
+QSpinBox[simproValue="true"]:focus, QDoubleSpinBox[simproValue="true"]:focus {
+    border-color: #C8161D;
+    background-color: #17181C;
+}
+QSpinBox[simproValue="true"]::up-button, QDoubleSpinBox[simproValue="true"]::up-button,
+QSpinBox[simproValue="true"]::down-button, QDoubleSpinBox[simproValue="true"]::down-button {
+    border-left: none;
+    width: 14px;
+}
+QDoubleSpinBox[simproBigValue="true"] {
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 40pt;
+    font-weight: bold;
+    padding: 0px;
+}
+QLabel[simproCaption="true"] {
+    color: #8A8D96;
+    font-size: 9pt;
+}
+QLabel[simproSection="true"] {
+    color: #E6E7EA;
+    font-size: 10.5pt;
+    font-weight: bold;
+}
+QPushButton[simproPrimary="true"] {
+    background-color: #C8161D;
+    border: 1px solid #C8161D;
+    color: #FFFFFF;
+    font-weight: bold;
+    padding: 6px 26px;
+}
+QPushButton[simproPrimary="true"]:hover {
+    background-color: #E0242B;
+    border-color: #E0242B;
+}
+QPushButton[simproPrimary="true"]:pressed {
+    background-color: #A11016;
+}
+QPushButton[simproPrimary="true"]:disabled {
+    background-color: #4A1518;
+    border-color: #4A1518;
+    color: #9A9DA6;
+}
+
+/* Card titles a bit larger, like "Steer Settings" */
+QGroupBox {
+    font-size: 12.5pt;
+}
+
+/* Spin boxes without arrow buttons (read-only displays).
+   Qt computes a 1px wide text field for them when the hidden buttons sit on
+   the right, so park the (invisible, zero width) buttons on the left. */
+QSpinBox[buttonSymbols="2"], QDoubleSpinBox[buttonSymbols="2"] {
+    padding-right: 4px;
+}
+QSpinBox[buttonSymbols="2"]::up-button, QDoubleSpinBox[buttonSymbols="2"]::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top left;
+    width: 0px;
+    border: none;
+}
+QSpinBox[buttonSymbols="2"]::down-button, QDoubleSpinBox[buttonSymbols="2"]::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom left;
+    width: 0px;
+    border: none;
 }
