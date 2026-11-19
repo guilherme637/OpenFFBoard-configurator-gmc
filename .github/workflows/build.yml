@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        conf:  [ {os: 'windows-latest', pyver: '3.8'},{os: 'windows-latest', pyver: '3.12'}, {os: 'macos-latest', pyver: '3.11'}]
+        conf:  [ {os: 'windows-latest', pyver: '3.12'} ]  # only Windows to save Actions minutes (private repo)
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
