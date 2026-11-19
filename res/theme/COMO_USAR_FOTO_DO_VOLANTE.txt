@@ -1,0 +1,14 @@
+Foto do volante na tela Axis
+============================
+
+Coloque aqui um arquivo chamado  wheel.png  (nesta pasta: res/theme/).
+
+Dicas para a imagem:
+- Foto de frente do volante, com o volante reto (centralizado).
+- Fundo transparente (PNG). Sites como remove.bg tiram o fundo.
+- Imagem quadrada, com o centro do volante no centro da imagem.
+- Qualquer tamanho; 400x400 ou mais fica bom.
+
+Sem esse arquivo, o app desenha um volante generico.
+A imagem gira de acordo com os graus mostrados na tela (posicao do encoder).
+Feche e abra o app depois de trocar a imagem.

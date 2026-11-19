@@ -639,7 +639,7 @@ QDoubleSpinBox[simproBigValue="true"] {
     background: transparent;
     border: none;
     color: #FFFFFF;
-    font-size: 40pt;
+    font-size: 30pt;
     font-weight: bold;
     padding: 0px;
 }

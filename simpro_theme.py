@@ -5,9 +5,15 @@ and shows the main tabs as a left icon side bar with a page title. It does not c
 logic, signal or command sent to the board.
 """
 
+import os
+from os.path import join as path_join
+
 import PyQt6.QtCore
+import PyQt6.QtGui
 import PyQt6.QtWidgets
-from PyQt6.QtGui import QColor, QFont, QIcon, QPalette
+from PyQt6.QtGui import (
+    QColor, QFont, QIcon, QPainter, QPalette, QPen, QPixmap, QPolygonF, QRadialGradient,
+)
 from PyQt6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QListView, QListWidget, QListWidgetItem,
     QStyle, QStyledItemDelegate, QTabWidget, QVBoxLayout, QWidget,
@@ -279,3 +285,148 @@ class _NavDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index):
         return PyQt6.QtCore.QSize(SIDEBAR_WIDTH - 4, 70)
+
+
+class SimproWheelView(QWidget):
+    """Steering wheel picture that turns with the axis angle (display only).
+
+    It only *reads* the angle already shown in the sibling
+    ``doubleSpinBox_curdeg`` (updated by the axis page from the encoder).
+    If ``res/theme/wheel.png`` exists (e.g. a front photo of your wheel with a
+    transparent background) it is used; otherwise a wheel is drawn.
+    """
+
+    IMAGE_FILE = "wheel.png"
+    _pixmap_cache = {}
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._target = 0.0
+        self._angle = 0.0
+        self._source = None
+        self._anim = PyQt6.QtCore.QTimer(self)
+        self._anim.setInterval(16)
+        self._anim.timeout.connect(self._step)
+        self.setSizePolicy(PyQt6.QtWidgets.QSizePolicy.Policy.Expanding,
+                           PyQt6.QtWidgets.QSizePolicy.Policy.Fixed)
+
+    # ---- link to the existing angle display
+    def _find_source(self):
+        p = self.parentWidget()
+        while p is not None:
+            spin = p.findChild(PyQt6.QtWidgets.QDoubleSpinBox, "doubleSpinBox_curdeg")
+            if spin is not None:
+                return spin
+            p = p.parentWidget()
+        return None
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._source is None:
+            self._source = self._find_source()
+            if self._source is not None:
+                self._source.valueChanged.connect(self.set_angle)
+                self._angle = self._target = self._source.value()
+        self.update()
+
+    def hideEvent(self, event):
+        self._anim.stop()
+        super().hideEvent(event)
+
+    def set_angle(self, degrees):
+        self._target = float(degrees)
+        if not self._anim.isActive() and self.isVisible():
+            self._anim.start()
+
+    def _step(self):
+        diff = self._target - self._angle
+        if abs(diff) < 0.05:
+            self._angle = self._target
+            self._anim.stop()
+        else:
+            self._angle += diff * 0.35
+        self.update()
+
+    # ---- drawing
+    @classmethod
+    def _user_pixmap(cls):
+        path = helper.res_path(cls.IMAGE_FILE, path_join("res", "theme"))
+        if path not in cls._pixmap_cache:
+            pm = QPixmap(path) if os.path.exists(path) else QPixmap()
+            cls._pixmap_cache[path] = pm
+        return cls._pixmap_cache[path]
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
+        size = min(self.width(), self.height()) - 6
+        painter.translate(self.width() / 2, self.height() / 2)
+
+        # fixed red marker on top (where the wheel center should be)
+        painter.setPen(PyQt6.QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(ACCENT)
+        painter.drawPolygon(QPolygonF([PyQt6.QtCore.QPointF(-5, -size / 2 - 3),
+                                       PyQt6.QtCore.QPointF(5, -size / 2 - 3),
+                                       PyQt6.QtCore.QPointF(0, -size / 2 + 4)]))
+
+        painter.rotate(self._angle)
+        pm = self._user_pixmap()
+        if not pm.isNull():
+            scaled = pm.scaled(int(size), int(size), PyQt6.QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                               PyQt6.QtCore.Qt.TransformationMode.SmoothTransformation)
+            painter.drawPixmap(int(-scaled.width() / 2), int(-scaled.height() / 2), scaled)
+        else:
+            self._draw_wheel(painter, (size - 10) / 2)
+        painter.end()
+
+    @staticmethod
+    def _draw_wheel(p, r):
+        Point = PyQt6.QtCore.QPointF
+        Rect = PyQt6.QtCore.QRectF
+        rim_w = r * 0.16
+        # spokes (behind rim and hub)
+        p.setPen(PyQt6.QtCore.Qt.PenStyle.NoPen)
+        p.setBrush(QColor("#2B2E36"))
+        for ang in (0, 180):
+            p.save()
+            p.rotate(ang)
+            p.drawRoundedRect(Rect(r * 0.25, -r * 0.13, r * 0.65, r * 0.26), r * 0.05, r * 0.05)
+            p.restore()
+        p.drawRoundedRect(Rect(-r * 0.12, r * 0.2, r * 0.24, r * 0.7), r * 0.05, r * 0.05)
+
+        # rim with soft gradient
+        grad = QRadialGradient(Point(0, -r * 0.3), r * 1.3)
+        grad.setColorAt(0.0, QColor("#41444D"))
+        grad.setColorAt(1.0, QColor("#16171B"))
+        pen = QPen(PyQt6.QtGui.QBrush(grad), rim_w)
+        pen.setCapStyle(PyQt6.QtCore.Qt.PenCapStyle.FlatCap)
+        p.setPen(pen)
+        p.setBrush(PyQt6.QtCore.Qt.BrushStyle.NoBrush)
+        rim = Rect(-r + rim_w / 2, -r + rim_w / 2, 2 * r - rim_w, 2 * r - rim_w)
+        p.drawEllipse(rim)
+        # grips (left / right), slightly lighter
+        grip = QPen(QColor("#3A3D46"), rim_w * 0.82)
+        grip.setCapStyle(PyQt6.QtCore.Qt.PenCapStyle.RoundCap)
+        p.setPen(grip)
+        p.drawArc(rim, int(150 * 16), int(60 * 16))
+        p.drawArc(rim, int(-30 * 16), int(60 * 16))
+        # red center stripe at 12 o'clock
+        stripe = QPen(ACCENT, rim_w * 1.02)
+        stripe.setCapStyle(PyQt6.QtCore.Qt.PenCapStyle.FlatCap)
+        p.setPen(stripe)
+        p.drawArc(rim, int(86 * 16), int(8 * 16))
+
+        # hub
+        hub = QRadialGradient(Point(-r * 0.08, -r * 0.1), r * 0.45)
+        hub.setColorAt(0.0, QColor("#3A3D46"))
+        hub.setColorAt(1.0, QColor("#1A1C21"))
+        p.setPen(QPen(QColor("#4A4D55"), 1.2))
+        p.setBrush(PyQt6.QtGui.QBrush(hub))
+        p.drawEllipse(Point(0, 0), r * 0.34, r * 0.34)
+        # buttons on the hub
+        p.setPen(PyQt6.QtCore.Qt.PenStyle.NoPen)
+        p.setBrush(QColor("#5A5D66"))
+        for x in (-0.2, 0.2):
+            p.drawEllipse(Point(r * x, -r * 0.12), r * 0.045, r * 0.045)
+        p.setBrush(ACCENT)
+        p.drawEllipse(Point(0, r * 0.12), r * 0.07, r * 0.07)
