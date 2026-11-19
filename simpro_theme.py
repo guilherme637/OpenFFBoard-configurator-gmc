@@ -263,10 +263,12 @@ def style_main_window(window):
 class _MotorStateBadges(PyQt6.QtCore.QObject):
     """Motor state badge(s) in the info strip, next to the connection badge.
 
-    READ ONLY: copies the text of ``label_state`` that each TMC4671 page
-    already shows (that page asks the board itself while it is open). This
-    never sends anything to the board. When the TMC page is not on screen the
-    last value seen is shown and marked as such.
+    Shows the text of ``label_state`` of each TMC4671 page.
+    While that page is open it already asks the board itself (every 0.25 s).
+    While it is NOT open, this asks the board once per second for the state
+    only, with the page's own read-only query (``tmc.state?``, the same one the
+    page sends); the reply goes through the page's original callback.
+    It never sets or changes anything on the board.
     Green = Running (ready), red = any other state.
     """
 
@@ -281,6 +283,20 @@ class _MotorStateBadges(PyQt6.QtCore.QObject):
         self._timer.setInterval(300)
         self._timer.timeout.connect(self.refresh)
         self._timer.start()
+        self._poll = PyQt6.QtCore.QTimer(self)
+        self._poll.setInterval(1000)
+        self._poll.timeout.connect(self._ask_state)
+        self._poll.start()
+
+    def _ask_state(self):
+        """Read-only state query for TMC pages that are not on screen."""
+        for page, _, _ in self._tmc_pages():
+            if page.isVisible() or not page.isEnabled():
+                continue  # open page polls by itself / page inactive
+            try:
+                page.send_command("tmc", "state", page.axis)
+            except Exception:
+                pass
 
     def _tmc_pages(self):
         pages = []
@@ -310,15 +326,13 @@ class _MotorStateBadges(PyQt6.QtCore.QObject):
             state = lbl.text().strip()
             if not state or state == "State":
                 text, kind = "aguardando leitura", "unknown"
-                tip = "Abra a aba do TMC4671 para ler o estado do motor."
+                tip = "Lendo o estado do motor..."
             else:
                 kind = "ready" if state in self.READY else "notready"
                 text = state
                 tip = f"Estado do driver ({name}): {state}"
-            live = page.isVisible()
-            if not live and kind != "unknown":
+            if not page.isEnabled() and kind != "unknown":
                 text += " · última leitura"
-                tip += "\nAtualiza enquanto a aba do TMC4671 estiver aberta."
             badge.setText(f"Motor: {text}")
             badge.setToolTip(tip)
             if badge.property("motorState") != kind:
